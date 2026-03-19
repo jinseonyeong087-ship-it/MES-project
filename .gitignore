@@ -1,0 +1,63 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+build/
+out/
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Logs
+logs/
+*.log
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# Spring Boot
+application-local.yml
+application-local.yaml
+application-secret.yml
+application-secret.yaml
+
+# Docker
+*.tar
+
+# Node (if any frontend later)
+node_modules/
+
+# Python (utility scripts)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Test/coverage
+coverage/
+*.coverage
+
+# SQL dumps / backups
+*.sql
+*.bak
+*.dump
+
+# IntelliJ
+*.iml
+
+# Mac metadata
+.AppleDouble
+.LSOverride
