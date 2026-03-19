@@ -93,11 +93,20 @@ mes-project/
     ├── erd.md
     ├── api-spec.md
     ├── business-flow.md
-    └── troubleshooting.md
+    ├── troubleshooting.md
+    └── db-environment.md
 ```
 
 ---
 
-## 6) 한 줄 요약 (면접용)
+## 6) DB 환경 구성
+
+DB 환경 구성 상세는 아래 문서에 정리했습니다.
+
+- [docs/db-environment.md](./docs/db-environment.md)
+
+---
+
+## 7) 한 줄 요약 (면접용)
 
 **“생산 실적 입력을 트랜잭션으로 처리해 작업지시 상태와 재고를 동시에 갱신하고, 로그까지 남겨 정합성과 추적성을 확보한 Mini MES 백엔드 프로젝트입니다.”**
