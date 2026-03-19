@@ -28,7 +28,7 @@ product (1) ---- (N) work_order (1) ---- (N) production_result
 - `product_id` (FK → product.id)
 - `process_id` (FK → process.id)
 - `planned_qty` (int)
-- `produced_qty` (int): 누적 생산량
+- `produced_qty` (int): 누적 생산량(`good_qty + defect_qty` 합계)
 - `status` (varchar): `PLANNED`, `IN_PROGRESS`, `COMPLETED`
 - `planned_date` (date)
 - `created_at`, `updated_at` (datetime2)
@@ -94,6 +94,10 @@ product (1) ---- (N) work_order (1) ---- (N) production_result
 
 ### 관계
 - inventory : inventory_log = 1 : N
+
+### 참조 기준
+- 생산 실적 입력으로 발생한 재고 증가 로그는 `ref_type='PRODUCTION_RESULT'`, `ref_id=production_result.id`로 저장
+- 필요 시 집계/추적 화면에서 `production_result -> work_order`를 따라 작업지시 기준으로 역추적
 
 ---
 
@@ -164,7 +168,7 @@ product (1) ---- (N) work_order (1) ---- (N) production_result
 6. commit
 
 ### 동시성 제어
-- 재고/작업지시는 `SELECT ... FOR UPDATE`(또는 DB 락 힌트)로 동시 업데이트 충돌 방지
+- MS-SQL 기준으로 재고/작업지시는 락 힌트(`UPDLOCK`, `ROWLOCK` 등) 또는 비관적 락으로 동시 업데이트 충돌 방지
 - 낙관적 락(버전 컬럼) 또는 비관적 락 중 트래픽 패턴에 맞게 선택
 
 ---

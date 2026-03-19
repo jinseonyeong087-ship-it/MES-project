@@ -82,6 +82,8 @@
   2. `work_order.produced_qty`/`status` 갱신
   3. `inventory.qty_on_hand` 증가(양품 기준)
   4. `inventory_log` 기록
+- `accumulatedProducedQty`는 `goodQty + defectQty` 누적값입니다.
+- `COMPLETED` 상태의 작업지시는 추가 실적 등록이 불가합니다.
 
 ---
 

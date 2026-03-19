@@ -25,6 +25,7 @@
 ### 4) 재고 반영
 - 양품 수량 기준으로 재고 증가
 - 동시성 고려하여 재고 레코드 잠금 후 반영
+- MS-SQL 환경에서는 `SELECT ... FOR UPDATE` 대신 `UPDLOCK`, `ROWLOCK` 등 락 힌트 또는 JPA 비관적 락으로 구현
 
 ### 5) 로그 기록
 - 재고 변경 전/후 수량 기록
@@ -44,7 +45,8 @@
 ### 상태 전이 규칙
 - `PLANNED -> IN_PROGRESS` : 첫 생산실적 등록 시
 - `IN_PROGRESS -> COMPLETED` : `produced_qty >= planned_qty`
-- `COMPLETED` 이후 추가 실적 등록은 기본적으로 제한(운영 정책에 따라 예외 처리 가능)
+- `produced_qty`는 `good_qty + defect_qty`의 누적값
+- `COMPLETED` 이후 추가 실적 등록은 허용하지 않음
 
 ---
 
@@ -53,6 +55,7 @@
 ```java
 @Transactional
 public ProductionResultResponse registerResult(RegisterResultRequest req) {
+    // MSSQL에서는 비관적 락 또는 락 힌트 기반 조회로 동시 업데이트를 제어
     WorkOrder wo = workOrderRepository.findByIdForUpdate(req.workOrderId());
     validateStatus(wo.getStatus());
 
@@ -68,6 +71,7 @@ public ProductionResultResponse registerResult(RegisterResultRequest req) {
     int after = inv.getQtyOnHand();
 
     inventoryLogRepository.save(
+        // 생산 실적 입력으로 발생한 재고 증가 이력이므로 ref_type=PRODUCTION_RESULT
         InventoryLog.productionIn(inv.getId(), pr.getId(), before, req.goodQty(), after)
     );
 
