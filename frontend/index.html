@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini MES Client</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-window">
+    <header class="titlebar">
+      <div class="left">Mini MES v0.1</div>
+      <div class="right">공정관리 > 생산실적등록</div>
+    </header>
+
+    <div class="toolbar">
+      <button class="tb-btn active" data-view="workorder">작업지시</button>
+      <button class="tb-btn" data-view="production">생산실적</button>
+      <button class="tb-btn" data-view="inventory">재고조회</button>
+      <button class="tb-btn" id="btnHealth">서버상태</button>
+    </div>
+
+    <main class="workspace">
+      <section class="panel panel-left">
+        <div class="panel-title">작업지시 목록</div>
+        <table class="grid" id="woGrid">
+          <thead>
+            <tr>
+              <th>ID</th><th>지시번호</th><th>상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="3" class="muted">데이터 없음</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="panel panel-center">
+        <div class="panel-title" id="formTitle">작업지시 등록</div>
+
+        <div class="view active" id="view-workorder">
+          <form id="workOrderForm" class="form enter-nav">
+            <label>작업지시번호 <input name="workOrderNo" placeholder="WO-20260320-001" required /></label>
+            <label>제품ID
+              <div class="inline-field">
+                <input name="productId" type="number" required />
+                <button type="button" class="lookup-btn" data-lookup="product">...</button>
+              </div>
+            </label>
+            <label>공정ID
+              <div class="inline-field">
+                <input name="processId" type="number" required />
+                <button type="button" class="lookup-btn" data-lookup="process">...</button>
+              </div>
+            </label>
+            <label>계획수량 <input name="plannedQty" type="number" required /></label>
+            <label>계획일자 <input name="plannedDate" type="date" required /></label>
+            <div class="actions"><button type="submit">저장</button></div>
+          </form>
+        </div>
+
+        <div class="view" id="view-production">
+          <form id="productionForm" class="form enter-nav">
+            <label>작업지시ID <input name="workOrderId" type="number" required /></label>
+            <label>양품수량 <input name="goodQty" type="number" required /></label>
+            <label>불량수량 <input name="defectQty" type="number" required /></label>
+            <label>실적시각 <input name="resultAt" type="datetime-local" required /></label>
+            <label>작업자 <input name="operator" required /></label>
+            <label>메모 <input name="memo" /></label>
+            <div class="actions"><button type="submit">등록</button></div>
+          </form>
+        </div>
+
+        <div class="view" id="view-inventory">
+          <form id="inventoryForm" class="form enter-nav">
+            <label>제품ID
+              <div class="inline-field">
+                <input name="productId" type="number" required />
+                <button type="button" class="lookup-btn" data-lookup="product-inv">...</button>
+              </div>
+            </label>
+            <div class="actions"><button type="submit">조회</button></div>
+          </form>
+          <table class="grid" id="invGrid">
+            <thead><tr><th>제품</th><th>현재고</th><th>안전재고</th></tr></thead>
+            <tbody><tr><td colspan="3" class="muted">조회 결과 없음</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel panel-right">
+        <div class="panel-title">알림 / 로그</div>
+        <pre id="result">Ready</pre>
+      </section>
+
+      <section class="panel panel-bottom">
+        <div class="panel-title">생산실적 현황</div>
+        <table class="grid" id="prodGrid">
+          <thead>
+            <tr>
+              <th>No</th><th>WO ID</th><th>양품</th><th>불량</th><th>작업자</th><th>시각</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" class="muted">데이터 없음</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <span id="statusText">READY</span>
+      <span>DB: mini_mes</span>
+      <span>MODE: LOCAL</span>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop hidden" id="lookupModal">
+    <div class="modal-window">
+      <div class="modal-title">
+        <span id="lookupTitle">코드 도움</span>
+        <button type="button" id="closeLookup">닫기</button>
+      </div>
+      <div class="modal-body">
+        <input id="lookupSearch" placeholder="검색어 입력" />
+        <table class="grid" id="lookupGrid">
+          <thead><tr><th>ID</th><th>코드</th><th>명칭</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="./main.js"></script>
+</body>
+</html>

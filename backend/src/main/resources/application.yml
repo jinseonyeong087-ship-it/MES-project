@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mini-mes-backend
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=mini_mes;encrypt=true;trustServerCertificate=true
+    username: sa
+    password: MesProject!2026
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    org.hibernate.SQL: info
