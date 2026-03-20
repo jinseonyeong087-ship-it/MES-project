@@ -5,9 +5,9 @@ spring:
   application:
     name: mini-mes-backend
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=mini_mes;encrypt=true;trustServerCertificate=true
-    username: sa
-    password: MesProject!2026
+    url: ${DB_URL:jdbc:sqlserver://localhost:1433;databaseName=mini_mes;encrypt=true;trustServerCertificate=true}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: none

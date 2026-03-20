@@ -51,9 +51,10 @@ coverage/
 *.coverage
 
 # SQL dumps / backups
-*.sql
 *.bak
 *.dump
+backup/
+*.sql.bak
 
 # IntelliJ
 *.iml
