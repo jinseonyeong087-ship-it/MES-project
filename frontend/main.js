@@ -8,6 +8,7 @@ const state = {
   inventories: [],
   products: [],
   processes: [],
+  inventoryLogs: [],
 };
 
 let lookupTarget = null;
@@ -17,7 +18,30 @@ const print = (data) => {
   result.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
 };
 
-function setStatus(msg) { statusText.textContent = msg; }
+function updateFlow(status) {
+  const planned = document.getElementById('flow-planned');
+  const progress = document.getElementById('flow-progress');
+  const completed = document.getElementById('flow-completed');
+  if (!planned || !progress || !completed) return;
+
+  [planned, progress, completed].forEach(el => el.classList.remove('active', 'done'));
+
+  if (status === 'PLANNED' || status === 'WORK ORDER SAVED' || status === 'WORK ORDER INPUT READY') {
+    planned.classList.add('active');
+  } else if (status === 'IN_PROGRESS' || status === 'PRODUCTION SAVED') {
+    planned.classList.add('done');
+    progress.classList.add('active');
+  } else if (status === 'COMPLETED' || status === 'INVENTORY UPDATED' || status === 'INVENTORY LOADED') {
+    planned.classList.add('done');
+    progress.classList.add('done');
+    completed.classList.add('active');
+  }
+}
+
+function setStatus(msg) {
+  statusText.textContent = msg;
+  updateFlow(msg);
+}
 
 async function request(url, method = 'GET', body) {
   const res = await fetch(url, {
@@ -63,6 +87,7 @@ function renderWorkOrders() {
       if (item.plannedDate) document.querySelector('#workOrderForm [name="plannedDate"]').value = item.plannedDate;
 
       setStatus(`WO SELECTED: ${item.workOrderNo}`);
+      updateFlow(item.status || 'PLANNED');
     });
   });
 }
@@ -98,6 +123,55 @@ function renderInventory() {
       <td>${i.safetyStock}</td>
     </tr>
   `).join('');
+}
+
+function renderKpi() {
+  const woCount = state.workOrders.length;
+  const inProgress = state.workOrders.filter(w => w.status === 'IN_PROGRESS').length;
+  const good = state.productionResults.reduce((sum, p) => sum + Number(p.goodQty || 0), 0);
+  const defect = state.productionResults.reduce((sum, p) => sum + Number(p.defectQty || 0), 0);
+  const rate = good + defect ? ((defect / (good + defect)) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('kpiWoCount').textContent = String(woCount);
+  document.getElementById('kpiInProgress').textContent = String(inProgress);
+  document.getElementById('kpiGoodQty').textContent = String(good);
+  document.getElementById('kpiDefectRate').textContent = `${rate}%`;
+}
+
+function renderInventoryLogs() {
+  const tbody = document.querySelector('#logGrid tbody');
+  if (!state.inventoryLogs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="muted">로그 없음</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = state.inventoryLogs.slice(0, 12).map(l => `
+    <tr>
+      <td>${(l.changedAt || '').replace('T', ' ').slice(0, 16)}</td>
+      <td>${l.productId ?? '-'}</td>
+      <td>${l.changeQty >= 0 ? `+${l.changeQty}` : l.changeQty}</td>
+      <td>${l.afterQty ?? '-'}</td>
+      <td>${l.refType || 'PRODUCTION_RESULT'}#${l.refId ?? '-'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAlerts() {
+  const ul = document.getElementById('alertList');
+  if (!ul) return;
+
+  const alerts = [];
+  const lowStocks = state.inventories.filter(i => Number(i.qtyOnHand) <= Number(i.safetyStock || 0));
+  if (lowStocks.length) alerts.push(`안전재고 미만 제품 ${lowStocks.length}건`);
+
+  const defect = state.productionResults.reduce((sum, p) => sum + Number(p.defectQty || 0), 0);
+  const total = state.productionResults.reduce((sum, p) => sum + Number(p.defectQty || 0) + Number(p.goodQty || 0), 0);
+  if (total > 0 && defect / total >= 0.05) alerts.push(`불량률 ${(defect / total * 100).toFixed(1)}% (기준 5%↑)`);
+
+  const planned = state.workOrders.filter(w => w.status === 'PLANNED').length;
+  if (planned > 3) alerts.push(`대기 작업지시 ${planned}건`);
+
+  ul.innerHTML = (alerts.length ? alerts : ['현재 경고 없음']).map(a => `<li>${a}</li>`).join('');
 }
 
 for (const btn of document.querySelectorAll('.tb-btn[data-view]')) {
@@ -222,7 +296,11 @@ async function loadInitialData() {
     renderWorkOrders();
     renderProdResults();
     renderInventory();
+    renderInventoryLogs();
+    renderKpi();
+    renderAlerts();
     setStatus('READY');
+    if (state.workOrders.length) updateFlow(state.workOrders[0].status || 'PLANNED');
   } catch (err) {
     setStatus('INIT LOAD ERROR');
     print(err);
@@ -251,6 +329,8 @@ document.getElementById('workOrderForm').addEventListener('submit', async (e) =>
     print(err);
   }
   renderWorkOrders();
+  renderKpi();
+  renderAlerts();
 });
 
 document.getElementById('productionForm').addEventListener('submit', async (e) => {
@@ -270,12 +350,28 @@ document.getElementById('productionForm').addEventListener('submit', async (e) =
     setStatus('PRODUCTION SAVED');
     print(data);
     state.productionResults.unshift(body);
+
+    const beforeQty = Number(data?.inventorySnapshot?.beforeQty ?? data?.beforeQty ?? 0);
+    const afterQty = Number(data?.inventorySnapshot?.afterQty ?? data?.afterQty ?? beforeQty + Number(body.goodQty || 0));
+    const productId = data?.productId ?? data?.inventorySnapshot?.productId ?? null;
+
+    state.inventoryLogs.unshift({
+      changedAt: new Date().toISOString(),
+      productId,
+      changeQty: Number(body.goodQty || 0),
+      afterQty,
+      refType: 'PRODUCTION_RESULT',
+      refId: data?.productionResultId ?? data?.id ?? null,
+    });
   } catch (err) {
     setStatus('ERROR');
     print(err);
   }
 
   renderProdResults();
+  renderInventoryLogs();
+  renderKpi();
+  renderAlerts();
 });
 
 document.getElementById('inventoryForm').addEventListener('submit', async (e) => {
@@ -295,9 +391,14 @@ document.getElementById('inventoryForm').addEventListener('submit', async (e) =>
     print(err);
   }
   renderInventory();
+  renderKpi();
+  renderAlerts();
 });
 
 renderWorkOrders();
 renderProdResults();
 renderInventory();
+renderInventoryLogs();
+renderKpi();
+renderAlerts();
 loadInitialData();

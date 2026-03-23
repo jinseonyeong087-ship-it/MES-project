@@ -20,6 +20,25 @@
       <button class="tb-btn" id="btnHealth">서버상태</button>
     </div>
 
+    <section class="kpi-strip">
+      <article class="kpi-card">
+        <div class="kpi-label">금일 작업지시</div>
+        <div class="kpi-value" id="kpiWoCount">0</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">진행 중 공정</div>
+        <div class="kpi-value" id="kpiInProgress">0</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">양품 누적</div>
+        <div class="kpi-value" id="kpiGoodQty">0</div>
+      </article>
+      <article class="kpi-card warning">
+        <div class="kpi-label">불량률</div>
+        <div class="kpi-value" id="kpiDefectRate">0%</div>
+      </article>
+    </section>
+
     <main class="workspace">
       <section class="panel panel-left">
         <div class="panel-title">작업지시 목록</div>
@@ -89,22 +108,52 @@
       </section>
 
       <section class="panel panel-right">
-        <div class="panel-title">알림 / 로그</div>
-        <pre id="result">Ready</pre>
+        <div class="panel-title">공정 흐름 / 작업자 알림</div>
+        <div class="panel-right-body">
+          <div class="flow-box" id="flowBox">
+            <div class="flow-step" id="flow-planned">1. 작업지시 생성 <span>PLANNED</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="flow-progress">2. 생산실적 등록 <span>IN_PROGRESS</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step" id="flow-completed">3. 작업완료/재고반영 <span>COMPLETED</span></div>
+          </div>
+          <ul class="alert-list" id="alertList">
+            <li>현재 경고 없음</li>
+          </ul>
+          <pre id="result">Ready</pre>
+        </div>
       </section>
 
       <section class="panel panel-bottom">
-        <div class="panel-title">생산실적 현황</div>
-        <table class="grid" id="prodGrid">
-          <thead>
-            <tr>
-              <th>No</th><th>WO ID</th><th>양품</th><th>불량</th><th>작업자</th><th>시각</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="6" class="muted">데이터 없음</td></tr>
-          </tbody>
-        </table>
+        <div class="panel-title">현장 모니터링</div>
+        <div class="bottom-layout">
+          <div class="subpanel">
+            <div class="sub-title">생산실적 현황</div>
+            <table class="grid" id="prodGrid">
+              <thead>
+                <tr>
+                  <th>No</th><th>WO ID</th><th>양품</th><th>불량</th><th>작업자</th><th>시각</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="6" class="muted">데이터 없음</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="subpanel">
+            <div class="sub-title">최근 수불 로그</div>
+            <table class="grid" id="logGrid">
+              <thead>
+                <tr>
+                  <th>시각</th><th>제품ID</th><th>변경</th><th>변경후</th><th>기준</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="5" class="muted">로그 없음</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
     </main>
 
