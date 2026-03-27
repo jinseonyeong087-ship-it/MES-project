@@ -93,11 +93,11 @@ class ProductionResultServiceTest {
         assertEquals(777L, response.productionResultId());
         assertEquals(10L, response.workOrderId());
         assertEquals("COMPLETED", response.workOrderStatus());
-        assertEquals(101, response.producedQty());
+        assertEquals(101, response.accumulatedProducedQty());
         assertEquals(50, response.inventory().beforeQty());
         assertEquals(8, response.inventory().changeQty());
         assertEquals(58, response.inventory().afterQty());
-        assertTrue(response.inventoryLogged());
+        assertTrue(response.logged());
 
         ArgumentCaptor<InventoryLog> logCaptor = ArgumentCaptor.forClass(InventoryLog.class);
         verify(inventoryLogRepository).save(logCaptor.capture());
