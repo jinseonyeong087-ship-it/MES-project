@@ -45,9 +45,16 @@ function setStatus(msg) {
 }
 
 async function request(url, method = 'GET', body) {
+  const headers = { 'Content-Type': 'application/json' };
+
+  // 운영/스테이징에서 API Key 방식 사용할 수 있도록 지원
+  if (window.__API_KEY__) headers['X-API-KEY'] = window.__API_KEY__;
+  if (window.__USER_ID__) headers['X-USER-ID'] = window.__USER_ID__;
+  if (window.__USER_ROLE__) headers['X-USER-ROLE'] = window.__USER_ROLE__;
+
   const res = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();

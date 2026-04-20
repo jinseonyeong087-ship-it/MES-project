@@ -27,3 +27,10 @@ app:
   cors:
     # 운영 시 반드시 회사 프론트 도메인으로 교체
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5500}
+  security:
+    # 운영환경 권장: true
+    require-api-key: ${APP_REQUIRE_API_KEY:false}
+    # 운영환경에서는 필수 지정(예: APP_API_KEY)
+    api-key: ${APP_API_KEY:}
+    # 쉼표 구분 ROLE 목록(예: ROLE_ADMIN,ROLE_OPERATOR)
+    write-roles: ${APP_WRITE_ROLES:ROLE_ADMIN,ROLE_OPERATOR}
