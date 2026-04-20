@@ -16,11 +16,13 @@ public class ProductionResultController {
         this.productionResultService = productionResultService;
     }
 
+    // 최근 생산실적 조회
     @GetMapping
     public List<ProductionResultListItem> getRecent() {
         return productionResultService.getRecent();
     }
 
+    // 생산실적 등록(재고/이력 반영 포함)
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ProductionResultResponse register(@Valid @RequestBody RegisterProductionResultRequest request) {

@@ -16,11 +16,13 @@ public class WorkOrderController {
         this.workOrderService = workOrderService;
     }
 
+    // 작업지시 목록 조회
     @GetMapping
     public List<WorkOrderResponse> getAll() {
         return workOrderService.getAll();
     }
 
+    // 작업지시 신규 생성
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public WorkOrderResponse create(@Valid @RequestBody CreateWorkOrderRequest request) {

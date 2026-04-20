@@ -12,6 +12,7 @@ public class InventoryController {
         this.inventoryService = inventoryService;
     }
 
+    // 제품별 현재고 조회
     @GetMapping("/{productId}")
     public InventoryResponse get(@PathVariable Long productId) {
         return inventoryService.getByProductId(productId);

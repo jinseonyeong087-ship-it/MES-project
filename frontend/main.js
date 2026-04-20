@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:8080/api/v1';
+// 브라우저 전역값(window.__API_BASE__)이 있으면 우선 사용
+const API_BASE = window.__API_BASE__ || 'http://localhost:8080/api/v1';
 const result = document.getElementById('result');
 const statusText = document.getElementById('statusText');
 

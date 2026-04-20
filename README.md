@@ -17,7 +17,7 @@
 ---
 
 ## 2. 기술 스택
-- **Backend**: Java 17, Spring Boot 3.3, Spring Data JPA
+- **Backend**: Java 17, Spring Boot 3.3, Spring Data JPA, Spring Security
 - **Database**: Microsoft SQL Server 2022
 - **Frontend**: HTML, CSS, Vanilla JavaScript
 - **Infra**: Docker, Docker Compose
@@ -50,119 +50,90 @@ flowchart TD
 
 ---
 
-## 5. ERD
-```mermaid
-erDiagram
-    PRODUCT ||--o{ WORK_ORDER : has
-    PROCESS ||--o{ WORK_ORDER : has
-    WORK_ORDER ||--o{ PRODUCTION_RESULT : has
-    PRODUCT ||--|| INVENTORY : has
-    INVENTORY ||--o{ INVENTORY_LOG : has
+## 5. 핵심 API
+- `GET /api/v1/health`
+- `GET /api/v1/work-orders`
+- `POST /api/v1/work-orders`
+- `GET /api/v1/production-results`
+- `POST /api/v1/production-results`
+- `GET /api/v1/inventories/{productId}`
+- `GET /api/v1/products`
+- `GET /api/v1/processes`
 
-    PRODUCT {
-      bigint id PK
-      string product_code
-      string product_name
-      string unit
-    }
-    PROCESS {
-      bigint id PK
-      string process_code
-      string process_name
-    }
-    WORK_ORDER {
-      bigint id PK
-      string work_order_no
-      bigint product_id FK
-      bigint process_id FK
-      int planned_qty
-      int produced_qty
-      string status
-      date planned_date
-    }
-    PRODUCTION_RESULT {
-      bigint id PK
-      bigint work_order_id FK
-      int good_qty
-      int defect_qty
-      int total_qty
-      datetime result_at
-      string operator
-    }
-    INVENTORY {
-      bigint id PK
-      bigint product_id FK
-      int qty_on_hand
-      int safety_stock
-    }
-    INVENTORY_LOG {
-      bigint id PK
-      bigint inventory_id FK
-      string change_type
-      string ref_type
-      bigint ref_id
-      int before_qty
-      int change_qty
-      int after_qty
-      datetime changed_at
-    }
+---
+
+## 6. 보안 적용 내역 (회사 제출용)
+
+### 6.1 민감정보 Git 업로드 방지
+- `.env`, `.env.*`, 키 파일(`*.pem`, `*.key`, `*.p12`, `*.jks`)은 `.gitignore`로 차단
+- 로컬 실행용 샘플만 `.env.example`로 제공
+- DB 계정/비밀번호는 **환경변수 주입 방식** (`DB_PASSWORD`, `MSSQL_SA_PASSWORD`)
+
+### 6.2 백엔드 보안 기본 강화
+- Spring Security 적용 (`spring-boot-starter-security`)
+- 무상태 세션(`STATELESS`) 설정
+- 불필요한 인증 방식 비활성화 (`httpBasic`, `formLogin` 비활성)
+- 보안 헤더 기본 적용
+  - `X-Content-Type-Options`
+  - `X-Frame-Options: DENY`
+  - `Referrer-Policy: no-referrer`
+
+### 6.3 CORS 제한
+- 과거 `allowedOrigins("*")` 제거
+- `app.cors.allowed-origins` 환경변수 기반 화이트리스트 방식 적용
+- 기본값은 로컬 개발 주소(`http://localhost:5500`)만 허용
+
+### 6.4 입력 검증 및 오류 응답 표준화
+- 요청 DTO에 Bean Validation 적용 (`@NotNull`, `@Min`, `@Pattern`, `@Size`)
+- `GlobalExceptionHandler`에서 검증 오류/업무 오류/예외 오류를 표준 포맷으로 반환
+- 내부 예외 상세는 외부에 노출하지 않음 (`Internal server error` 고정)
+
+### 6.5 로그 노출 최소화
+- SQL 상세 출력 레벨을 `warn`으로 하향
+- 운영 시 민감정보 로그 노출 가능성 축소
+
+---
+
+## 7. 보안 증적(검증 기록)
+
+아래 명령으로 점검합니다.
+
+```bash
+# 1) 민감 파일 Git 추적 여부 점검
+cd /home/xkak9/projects/mes-project
+git ls-files | grep -E '^\.env$|\.pem$|\.key$|\.p12$|\.jks$'
+# 기대결과: 출력 없음
+
+# 2) CORS 와일드카드 사용 금지 점검
+grep -RIn 'allowedOrigins\("\*"\)' backend/src/main/java
+# 기대결과: 출력 없음
+
+# 3) 환경변수 기반 비밀번호 주입 점검
+grep -n 'password:' backend/src/main/resources/application.yml
+# 기대결과: password: ${DB_PASSWORD}
+
+# 4) 테스트/빌드 검증
+cd backend
+mvn -B test
+mvn -B -DskipTests package
 ```
 
----
-
-## 6. 주요 기능
-### 6.1 작업지시
-- 작업지시 등록/조회
-- 계획수량 기반 상태 추적
-
-### 6.2 생산실적
-- 양품/불량/작업자/시각 등록
-- 등록 시 작업지시 누적 생산량 자동 반영
-- 작업자가 화면 우측의 **공정 흐름 패널**에서 현재 단계(PLANNED/IN_PROGRESS/COMPLETED) 즉시 확인 가능
-
-### 6.3 재고 및 이력
-- 양품 수량 기준 재고 증가
-- 이력 테이블에 변경 전/후 수량 기록
-
-### 6.4 현장 모니터링 UI
-- KPI 카드(작업지시 수, 진행 공정, 양품 누적, 불량률)
-- 공정 흐름 패널(PLANNED → IN_PROGRESS → COMPLETED)
-- 작업자 알림 영역(안전재고/불량률/대기 지시 경고)
-- 최근 수불 로그 테이블
-
----
-
-## 7. 주요 화면
-### 7.1 메인 대시보드
-![Main](captures/01-main-dashboard.png)
-
-### 7.2 작업지시 등록
-![WorkOrder](captures/02-workorder-created.png)
-
-### 7.3 생산실적 등록
-![Production](captures/03-production-result.png)
-
-### 7.4 재고 반영 확인
-![Inventory](captures/04-inventory-balance.png)
-
-### 7.5 완료 상태 및 이력 확인
-![Completed](captures/05-completed-and-log.png)
+> 참고: `.env.example`는 샘플 파일이며, 실제 비밀번호는 절대 커밋하지 않습니다.
 
 ---
 
 ## 8. 실행 방법
-### 8.1 DB 실행
+
+### 8.1 환경변수 파일 준비
+```bash
+cp .env.example .env
+# .env 열어서 강한 비밀번호로 변경
+```
+
+### 8.2 DB 실행
 ```bash
 docker compose up -d
 docker compose ps
-```
-
-### 8.2 DB 생성/스키마 적용
-```bash
-docker exec -it mes-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -Q "IF DB_ID('mini_mes') IS NULL CREATE DATABASE mini_mes;"
-
-docker exec -i mes-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -I -d mini_mes -b < ./sql/01_schema.sql
-docker exec -i mes-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -I -d mini_mes -b < ./sql/02_seed.sql
 ```
 
 ### 8.3 백엔드 실행
@@ -186,15 +157,14 @@ docker compose down -v
 
 ---
 
-## 9. API 요약
-- `GET /api/v1/health`
-- `GET /api/v1/work-orders`
-- `POST /api/v1/work-orders`
-- `GET /api/v1/production-results`
-- `POST /api/v1/production-results`
-- `GET /api/v1/inventories/{productId}`
-- `GET /api/v1/products`
-- `GET /api/v1/processes`
+## 9. 유지보수 가이드 (요약)
+- 비즈니스 로직은 `service` 계층에만 작성
+- `controller`는 입출력/검증 위주로 단순화
+- 핵심 로직에는 한국어 주석으로 의도 기록
+- 신규 기능 추가 시 필수
+  1. DTO 검증 규칙 작성
+  2. 서비스 단위 테스트 추가
+  3. README 보안 체크리스트 갱신
 
 ---
 
@@ -207,6 +177,7 @@ mes-project/
 ├─ docs/
 ├─ scripts/
 ├─ docker-compose.yml
+├─ .env.example
 ├─ .github/workflows/backend-ci.yml
 └─ README.md
 ```

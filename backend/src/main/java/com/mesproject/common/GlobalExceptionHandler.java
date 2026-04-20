@@ -29,15 +29,33 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest req) {
+        String detail = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .orElse("Invalid request payload");
+
         ApiError body = new ApiError(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
                 "BAD_REQUEST",
                 "VALIDATION_ERROR",
-                "Invalid request payload",
+                detail,
                 req.getRequestURI()
         );
         return ResponseEntity.badRequest().body(body);
     }
-}
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest req) {
+        // 내부 예외 메시지는 노출하지 않고 고정 문구만 반환
+        ApiError body = new ApiError(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "INTERNAL_SERVER_ERROR",
+                "UNEXPECTED_ERROR",
+                "Internal server error",
+                req.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
+}

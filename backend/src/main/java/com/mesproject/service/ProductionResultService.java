@@ -35,6 +35,7 @@ public class ProductionResultService {
         this.inventoryLogRepository = inventoryLogRepository;
     }
 
+    // 최근 실적 100건을 조회해 대시보드 초기 로딩에 사용
     public List<ProductionResultListItem> getRecent() {
         return productionResultRepository.findTop100ByOrderByResultAtDesc().stream().map(p ->
                 new ProductionResultListItem(
@@ -48,12 +49,14 @@ public class ProductionResultService {
         ).toList();
     }
 
+    // 실적 등록, 작업지시 상태 반영, 재고/로그 반영을 하나의 트랜잭션으로 처리
     @Transactional
     public ProductionResultResponse register(RegisterProductionResultRequest req) {
         if (req.goodQty() < 0 || req.defectQty() < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Qty must be >= 0");
         }
 
+        // 동시성 충돌 방지를 위해 작업지시를 잠금 조회
         WorkOrder wo = workOrderRepository.findByIdForUpdate(req.workOrderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "WorkOrder not found"));
 
@@ -73,17 +76,18 @@ public class ProductionResultService {
         int produced = req.goodQty() + req.defectQty();
         int newProduced = wo.getProducedQty() + produced;
         wo.setProducedQty(newProduced);
-        if (newProduced >= wo.getPlannedQty()) wo.setStatus("COMPLETED");
-        else wo.setStatus("IN_PROGRESS");
+        wo.setStatus(newProduced >= wo.getPlannedQty() ? "COMPLETED" : "IN_PROGRESS");
 
+        // 동시성 충돌 방지를 위해 재고도 잠금 조회
         Inventory inv = inventoryRepository.findByProductIdForUpdate(wo.getProduct().getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Inventory not found for product"));
 
         int before = inv.getQtyOnHand();
-        int change = req.goodQty();
+        int change = req.goodQty(); // 양품만 재고 증가 반영
         inv.setQtyOnHand(before + change);
         int after = inv.getQtyOnHand();
 
+        // 감사 추적용 재고 이력 기록
         InventoryLog log = new InventoryLog();
         log.setInventory(inv);
         log.setChangeType("PRODUCTION_IN");
